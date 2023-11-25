@@ -18,7 +18,7 @@ class Wave
     protected $token;
     protected $businessId;
     protected $requestType; // query or mutation
-    protected $requestsThatNeedBusinessId = ['customerCreate','productCreate','customers', 'customerExists','products','business','taxes'];
+    protected $requestsThatNeedBusinessId = ['customerCreate','productCreate','customers', 'customerExists','products','business','taxes', 'invoices', 'invoiceCreate'];
     protected $requestsWithPagination = ['businesses','customers','products'];
     protected $cachedMethod;
     protected $cachedParams;
@@ -29,6 +29,7 @@ class Wave
 
     public function __construct(Http $client = null, $graphqlUrl = null, $token = null, $businessId = null)
     {
+
         $this->token = ($token ? $token : config('laravel-wave.access_token'));
         if (empty($this->token)) {
             throw new Exception("Wave access token is required.", 400);
