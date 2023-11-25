@@ -29,7 +29,6 @@ class Wave
 
     public function __construct(Http $client = null, $graphqlUrl = null, $token = null, $businessId = null)
     {
-
         $this->token = ($token ? $token : config('laravel-wave.access_token'));
         if (empty($this->token)) {
             throw new Exception("Wave access token is required.", 400);
@@ -173,6 +172,11 @@ class Wave
     public function getBusinessId()
     {
         return $this->businessId;
+    }
+
+    public function didSucceed()
+    {
+        return $this->recursiveFindByKey($this->cachedResponse,'didSucceed');
     }
 
     private function recursiveFindByKey(array $haystack,$needle)
