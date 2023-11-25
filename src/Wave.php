@@ -18,7 +18,7 @@ class Wave
     protected $token;
     protected $businessId;
     protected $requestType; // query or mutation
-    protected $requestsThatNeedBusinessId = ['customerCreate','productCreate','customers', 'customerExists','products','business','taxes'];
+    protected $requestsThatNeedBusinessId = ['customerCreate','productCreate','customers', 'customerExists','products','business','taxes', 'invoices', 'invoiceCreate'];
     protected $requestsWithPagination = ['businesses','customers','products'];
     protected $cachedMethod;
     protected $cachedParams;
@@ -172,6 +172,11 @@ class Wave
     public function getBusinessId()
     {
         return $this->businessId;
+    }
+
+    public function didSucceed()
+    {
+        return $this->recursiveFindByKey($this->cachedResponse,'didSucceed');
     }
 
     private function recursiveFindByKey(array $haystack,$needle)
