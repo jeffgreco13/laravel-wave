@@ -239,6 +239,57 @@ query (\$businessId: ID!) {
 GQL;
     }
 
+    public static function invoices()
+    {
+        $invoice = QueryObject::invoice();
+
+        return <<<GQL
+query(\$businessId: ID!, \$customerId: ID, \$page: Int = 1, \$pageSize: Int = 10) {
+    business(id: \$businessId) {
+        id
+        invoices(customerId: \$customerId, page: \$page, pageSize: \$pageSize) {
+            pageInfo {
+                currentPage
+                totalPages
+                totalCount
+            }
+            edges {
+                node {
+                    $invoice
+                }
+            }
+        }
+    }
+}
+GQL;
+    }
+
+    public static function invoicesByStatus()
+    {
+        $invoice = QueryObject::invoice();
+
+        return <<<GQL
+query(\$businessId: ID!, \$customerId: ID, \$invoiceStatus: InvoiceStatus!, \$page: Int = 1, \$pageSize: Int = 10) {
+    business(id: \$businessId) {
+        id
+        invoices(customerId: \$customerId, status: \$invoiceStatus, page: \$page, pageSize: \$pageSize) {
+            pageInfo {
+                currentPage
+                totalPages
+                totalCount
+            }
+            edges {
+                node {
+                    $invoice
+                }
+            }
+        }
+    }
+}
+GQL;
+    }
+
+
 //     public static function invoicesByCustomerByStatus()
 //     {
 //         $business = QueryObject::business();
@@ -355,32 +406,6 @@ GQL;
 //         $business
 //         customer(id: \$customer_id) {
 //             $customer
-//         }
-//     }
-// }
-// GQL;
-//     }
-
-//     public static function businessInvoices()
-//     {
-//         $business = QueryObject::business();
-//         $invoice = QueryObject::invoice();
-
-//         return <<<GQL
-// query(\$business_id: ID!, \$invoice_page: Int = 1, \$invoice_page_size: Int = 10) {
-//     business(id: \$business_id) {
-//         $business
-//         invoices(page: \$invoice_page, pageSize: \$invoice_page_size) {
-//             pageInfo {
-//                 currentPage
-//                 totalPages
-//                 totalCount
-//             }
-//             edges {
-//                 node {
-//                     $invoice
-//                 }
-//             }
 //         }
 //     }
 // }
