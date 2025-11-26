@@ -18,8 +18,8 @@ class Wave
     protected $token;
     protected $businessId;
     protected $requestType; // query or mutation
-    protected $requestsThatNeedBusinessId = ['customerCreate','productCreate','customers', 'customerExists','products','business','taxes', 'invoices', 'invoiceCreate'];
-    protected $requestsWithPagination = ['businesses','customers','products'];
+    protected $requestsThatNeedBusinessId = ['customerCreate', 'productCreate', 'customers', 'customerExists', 'products', 'business', 'taxes', 'invoices', 'invoicesByStatus', 'invoiceCreate'];
+    protected $requestsWithPagination = ['businesses', 'customers', 'products', 'invoices'];
     protected $cachedMethod;
     protected $cachedParams;
     protected $cachedQuery;
