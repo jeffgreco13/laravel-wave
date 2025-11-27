@@ -23,7 +23,7 @@ class WaveServiceProvider extends ServiceProvider
     public function register()
     {
         $this->app->bind('laravel-wave', function () {
-            return new Wave();
+            return new WaveService();
         });
 
         $this->mergeConfigFrom(__DIR__.'/../config/wave.php', 'laravel-wave');

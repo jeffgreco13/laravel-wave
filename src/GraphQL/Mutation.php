@@ -62,64 +62,6 @@ mutation CustomerDeleteInput(\$input: CustomerDeleteInput!) {
 GQL;
     }
 
-    public static function accountCreate()
-    {
-        $account = QueryObject::account();
-
-        return <<<GQL
-mutation AccountCreateInput(\$input: AccountCreateInput!) {
-    accountCreate(input: \$input) {
-        account {
-            $account
-        }
-        didSucceed
-        inputErrors {
-            path
-            message
-            code
-        }
-    }
-}
-GQL;
-    }
-
-    public static function accountPatch()
-    {
-        $account = QueryObject::account();
-
-        return <<<GQL
-mutation AccountPatchInput(\$input: AccountPatchInput!) {
-    accountPatch(input: \$input) {
-        account {
-            $account
-        }
-        didSucceed
-        inputErrors {
-            path
-            message
-            code
-        }
-    }
-}
-GQL;
-    }
-
-    public static function accountArchive()
-    {
-        return <<<GQL
-mutation AccountArchiveInput(\$input: AccountArchiveInput!) {
-    accountArchive(input: \$input) {
-        didSucceed
-        inputErrors {
-            path
-            message
-            code
-        }
-    }
-}
-GQL;
-    }
-
     public static function productCreate()
     {
         $product = QueryObject::product();

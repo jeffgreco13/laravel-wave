@@ -16,8 +16,8 @@
         }
     },
     "require": {
-        "guzzlehttp/guzzle": ">=6.0",
-        "laravel/framework": ">=9.0"
+        "php": "^8.2",
+        "laravel/framework": "^12.0"
     },
     "autoload-dev": {
         "psr-4": {
@@ -30,7 +30,7 @@
                 "Jeffgreco13\\Wave\\WaveServiceProvider"
             ],
             "aliases": {
-                "Wave": "Jeffgreco13\\Wave\\Wave"
+                "Wave": "Jeffgreco13\\Wave\\WaveService"
             }
         }
     },

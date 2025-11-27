@@ -8,7 +8,7 @@ use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 
-class Currency implements ArrayAccess, Arrayable
+class WaveCurrency implements ArrayAccess, Arrayable
 {
     protected array $attributes = [];
 

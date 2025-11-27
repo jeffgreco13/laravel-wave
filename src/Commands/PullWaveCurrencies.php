@@ -2,8 +2,8 @@
 
 namespace Jeffgreco13\Wave\Commands;
 
-use Jeffgreco13\Wave\Wave;
 use Illuminate\Console\Command;
+use Jeffgreco13\Wave\WaveService;
 
 class PullWaveCurrencies extends Command
 {
@@ -26,9 +26,14 @@ class PullWaveCurrencies extends Command
      */
     public function handle()
     {
-        $wave = new Wave();
-        if ($currencies = data_get($wave->currencies(),'data.currencies',false)){
+        $wave = new WaveService();
+
+        if ($currencies = $wave->getAllCurrencies()){
             file_put_contents(storage_path('wave_currencies.json'),json_encode($currencies));
+            $this->info('Currencies saved in storage path!');
+        } else {
+            $this->error('No currencies or empty array returned. Query failed.');
         }
+
     }
 }

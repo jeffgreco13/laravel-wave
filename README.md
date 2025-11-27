@@ -52,11 +52,11 @@ php artisan wave:pull-currencies
 You may now use the Currency class like so:
 
 ```php
-use Jeffgreco13\Wave\Currency;
+use Jeffgreco13\Wave\WaveCurrency;
 
-$currencies = Currency::all(); // returns a Collection of Currency objects
+$currencies = WaveCurrency::all(); // returns a Collection of Currency objects
 
-$currency = Currency::firstWhere('code','ARS'); // returns a single Currency object if found, or null
+$currency = WaveCurrency::firstWhere('code','ARS'); // returns a single Currency object if found, or null
 echo $currency->name; // output: Argentinian peso
 
 // Currency array attributes
