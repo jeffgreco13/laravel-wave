@@ -4,13 +4,15 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Psr7\Response;
-use PHPUnit\Framework\TestCase;
 use Jeffgreco13\Wave\Wave;
+use PHPUnit\Framework\TestCase;
 
 class WaveTest extends TestCase
 {
     const Wave_URI = 'https://gql.Waves.com/graphql/public';
+
     const Wave_TOKEN = 'waveapdummyaccesstoken';
+
     const Wave_BUSINESS_ID = 'dummybusinessid';
 
     /** @test */

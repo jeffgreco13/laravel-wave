@@ -6,15 +6,16 @@ class QueryObject
 {
     public static function pageInfo(): string
     {
-        return <<<GQL
+        return <<<'GQL'
             currentPage
             totalPages
             totalCount
             GQL;
     }
+
     public static function OAuthApplication()
     {
-        return <<<GQL
+        return <<<'GQL'
             id
             name
             description
@@ -28,7 +29,7 @@ class QueryObject
 
     public static function user()
     {
-        return <<<GQL
+        return <<<'GQL'
             id
             defaultEmail
             firstName
@@ -143,7 +144,7 @@ class QueryObject
 
     public static function businessType()
     {
-        return <<<GQL
+        return <<<'GQL'
             name
             value
             GQL;
@@ -151,7 +152,7 @@ class QueryObject
 
     public static function businessSubType()
     {
-        return <<<GQL
+        return <<<'GQL'
             name
             value
             GQL;
@@ -159,7 +160,7 @@ class QueryObject
 
     public static function currency()
     {
-        return <<<GQL
+        return <<<'GQL'
             code
             symbol
             name
@@ -189,7 +190,7 @@ class QueryObject
 
     public static function province()
     {
-        return <<<GQL
+        return <<<'GQL'
             code
             name
             GQL;
@@ -349,7 +350,7 @@ class QueryObject
 
     public static function accountType()
     {
-        return <<<GQL
+        return <<<'GQL'
             name
             normalBalanceType
             value
@@ -411,7 +412,7 @@ class QueryObject
 
     public static function salesTaxRate()
     {
-        return <<<GQL
+        return <<<'GQL'
             effective
             rate
             GQL;
@@ -419,7 +420,7 @@ class QueryObject
 
     public static function product()
     {
-        return <<<GQL
+        return <<<'GQL'
             id
             name
             description
@@ -446,7 +447,7 @@ class QueryObject
 
     public static function transaction()
     {
-        return <<<GQL
+        return <<<'GQL'
             id
             GQL;
     }

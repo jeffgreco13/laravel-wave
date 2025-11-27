@@ -2,9 +2,9 @@
 
 namespace Jeffgreco13\Wave\Traits;
 
+use Illuminate\Support\Collection;
 use Jeffgreco13\Wave\Node;
 use Jeffgreco13\Wave\QueryObject;
-use Illuminate\Support\Collection;
 
 trait ManagesBusinesses
 {
@@ -29,9 +29,11 @@ trait ManagesBusinesses
             GQL;
 
         $this->cachedResponse = $this->query();
+
         return $this->getNodes();
 
     }
+
     public function getBusiness(?string $id = null)
     {
         $businessId = $id ?? $this->getBusinessId();
@@ -45,6 +47,7 @@ trait ManagesBusinesses
             }
             GQL;
         $this->cachedResponse = $this->query();
-        return new Node(data_get($this->cachedResponse,'data.business',[]));
+
+        return new Node(data_get($this->cachedResponse, 'data.business', []));
     }
 }

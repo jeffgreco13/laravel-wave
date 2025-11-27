@@ -2,8 +2,8 @@
 
 namespace Jeffgreco13\Wave;
 
-use Exception;
 use ArrayAccess;
+use Exception;
 
 class Node implements ArrayAccess
 {
@@ -24,7 +24,7 @@ class Node implements ArrayAccess
             return $this->getAttribute($key);
         }
 
-        throw new Exception('Property ' . $key . ' does not exist on ' . get_called_class());
+        throw new Exception('Property '.$key.' does not exist on '.get_called_class());
     }
 
     /**
@@ -34,6 +34,7 @@ class Node implements ArrayAccess
     {
         return array_key_exists($key, $this->attributes);
     }
+
     /**
      * Determine if the given attribute exists.
      *
@@ -106,6 +107,4 @@ class Node implements ArrayAccess
 
         return $this;
     }
-
-
 }

@@ -2,9 +2,8 @@
 
 namespace Jeffgreco13\Wave\Traits;
 
-use Jeffgreco13\Wave\Node;
-use Jeffgreco13\Wave\QueryObject;
 use Illuminate\Support\Collection;
+use Jeffgreco13\Wave\QueryObject;
 
 trait ManagesTaxes
 {
@@ -28,6 +27,7 @@ trait ManagesTaxes
             }
             GQL;
         $this->cachedResponse = $this->query();
+
         return $this->getNodes();
 
     }

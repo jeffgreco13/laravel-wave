@@ -2,13 +2,12 @@
 
 namespace Jeffgreco13\Wave;
 
-use Exception;
 use ArrayAccess;
+use Exception;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Storage;
 
-class WaveCurrency implements ArrayAccess, Arrayable
+class WaveCurrency implements Arrayable, ArrayAccess
 {
     protected array $attributes = [];
 
@@ -19,9 +18,10 @@ class WaveCurrency implements ArrayAccess, Arrayable
 
     protected static function fetch()
     {
-        if (!file_exists(storage_path('wave_currencies.json'))) {
+        if (! file_exists(storage_path('wave_currencies.json'))) {
             throw new Exception('Currencies file missing. Download using php artisan wave:pull-currencies');
         }
+
         return collect(Cache::rememberForever('currencies', function () {
             return json_decode(file_get_contents(storage_path('wave_currencies.json')), true);
         }));
@@ -29,16 +29,17 @@ class WaveCurrency implements ArrayAccess, Arrayable
 
     public static function all()
     {
-        return static::fetch()->map(function($item){
+        return static::fetch()->map(function ($item) {
             return new self($item);
         });
     }
 
-    public static function firstWhere(string $key,string $value)
+    public static function firstWhere(string $key, string $value)
     {
-        $first = static::fetch()->first(function($item) use ($key,$value){
+        $first = static::fetch()->first(function ($item) use ($key, $value) {
             return $item[$key] == $value;
         });
+
         return $first ? new self($first) : null;
     }
 
@@ -52,7 +53,7 @@ class WaveCurrency implements ArrayAccess, Arrayable
             return $this->getAttribute($key);
         }
 
-        throw new Exception('Property ' . $key . ' does not exist on ' . get_called_class());
+        throw new Exception('Property '.$key.' does not exist on '.get_called_class());
     }
 
     /**
@@ -62,6 +63,7 @@ class WaveCurrency implements ArrayAccess, Arrayable
     {
         return array_key_exists($key, $this->attributes);
     }
+
     /**
      * Determine if the given attribute exists.
      *
@@ -139,5 +141,4 @@ class WaveCurrency implements ArrayAccess, Arrayable
     {
         return $this->attributes;
     }
-
 }

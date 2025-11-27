@@ -26,10 +26,10 @@ class PullWaveCurrencies extends Command
      */
     public function handle()
     {
-        $wave = new WaveService();
+        $wave = new WaveService;
 
-        if ($currencies = $wave->getAllCurrencies()){
-            file_put_contents(storage_path('wave_currencies.json'),json_encode($currencies));
+        if ($currencies = $wave->getAllCurrencies()) {
+            file_put_contents(storage_path('wave_currencies.json'), json_encode($currencies));
             $this->info('Currencies saved in storage path!');
         } else {
             $this->error('No currencies or empty array returned. Query failed.');

@@ -2,9 +2,8 @@
 
 namespace Jeffgreco13\Wave\Traits;
 
-use Jeffgreco13\Wave\Node;
-use Jeffgreco13\Wave\QueryObject;
 use Illuminate\Support\Collection;
+use Jeffgreco13\Wave\QueryObject;
 
 trait ManagesCurrencies
 {
@@ -20,7 +19,8 @@ trait ManagesCurrencies
             }
             GQL;
         $response = $this->query();
-        return collect(data_get($this->cachedResponse,'data.currencies',[]) ?? []);
+
+        return collect(data_get($this->cachedResponse, 'data.currencies', []) ?? []);
 
     }
 
@@ -36,7 +36,8 @@ trait ManagesCurrencies
             }
             GQL;
         $response = $this->query();
-        return collect(data_get($this->cachedResponse,'data.countries',[]) ?? []);
+
+        return collect(data_get($this->cachedResponse, 'data.countries', []) ?? []);
 
     }
 }

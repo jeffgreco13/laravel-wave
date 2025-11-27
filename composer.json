@@ -9,7 +9,7 @@
             "email": "jeff@jeffpgreco.com"
         }
     ],
-    "minimum-stability": "dev",
+    "minimum-stability": "stable",
     "autoload": {
         "psr-4": {
             "Jeffgreco13\\Wave\\": "src/"
@@ -30,12 +30,13 @@
                 "Jeffgreco13\\Wave\\WaveServiceProvider"
             ],
             "aliases": {
-                "Wave": "Jeffgreco13\\Wave\\WaveService"
+                "WaveService": "Jeffgreco13\\Wave\\WaveService"
             }
         }
     },
     "require-dev": {
-        "phpunit/phpunit": "^8.3",
-        "orchestra/testbench": "~3.0"
+        "phpunit/phpunit": "^11.5.3",
+        "orchestra/testbench": "^10.0",
+        "laravel/pint": "^1.26"
     }
 }
