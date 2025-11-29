@@ -107,4 +107,14 @@ class Node implements ArrayAccess
 
         return $this;
     }
+
+    /**
+     * Get the array representation of the node.
+     *
+     * @return array
+     */
+    public function toArray(): array
+    {
+        return $this->attributes;
+    }
 }
