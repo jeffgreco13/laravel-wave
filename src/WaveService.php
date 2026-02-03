@@ -168,10 +168,13 @@ class WaveService
 
     protected function query(array $variables = []): mixed
     {
-        $response = $this->client->post($this->url, [
-            'query' => $this->cachedQuery,
-            'variables' => $variables,
-        ]);
+        $payload = ['query' => $this->cachedQuery];
+
+        if (! empty($variables)) {
+            $payload['variables'] = $variables;
+        }
+
+        $response = $this->client->post($this->url, $payload);
 
         if ($response->failed()) {
             $errors = collect(data_get($response->json(), 'errors', []));
