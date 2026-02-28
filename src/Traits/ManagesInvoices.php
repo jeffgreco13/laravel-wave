@@ -11,71 +11,67 @@ trait ManagesInvoices
 {
     public function getInvoices(?array $variables = []): Collection
     {
-        if (! isset($variables['sort'])) {
-            $variables['sort'] = InvoiceSort::INVOICE_DATE_ASC;
-        }
-        // Merge with cached variables.
-        $variables = array_merge($this->cachedVariables, $variables);
-        // Save new cached variables.
-        $this->cachedVariables = $variables;
-
-        $businessId = $this->getBusinessId();
-        $pageInfoNode = QueryObject::pageInfo();
-        $invoiceNode = QueryObject::invoice();
-
-        $this->cachedQuery = <<<GQL
-            query(\$page: Int, \$pageSize: Int, \$sort: [InvoiceSort!]!, \$modifiedAtAfter: DateTime, \$modifiedAtBefore: DateTime) {
-                business(id: "{$businessId}") {
-                    invoices(page: \$page, pageSize: \$pageSize, sort: \$sort, modifiedAtAfter: \$modifiedAtAfter,modifiedAtBefore: \$modifiedAtBefore) {
-                        pageInfo {
-                            $pageInfoNode
-                        }
-                        edges {
-                            node {
-                                $invoiceNode
-                            }
-                        }
-                    }
-                }
-            }
-            GQL;
-        $this->cachedResponse = $this->query($variables);
-
-        return $this->getNodes();
+        return $this->fetchInvoices(null, $variables);
     }
 
     public function getInvoicesByCustomer(string $customerId, ?array $variables = []): Collection
     {
-        $variables['customerId'] = $customerId;
+        return $this->fetchInvoices($customerId, $variables);
+    }
 
+    private function fetchInvoices(?string $customerId, array $variables): Collection
+    {
         if (! isset($variables['sort'])) {
             $variables['sort'] = InvoiceSort::INVOICE_DATE_ASC;
         }
         // Merge with cached variables.
         $variables = array_merge($this->cachedVariables, $variables);
-        // Save new cached variables.
-        $this->cachedVariables = $variables;
+        // Save new cached variables (excluding method-specific parameters).
+        $cachedVars = $variables;
+        unset($cachedVars['customerId']);
+        $this->cachedVariables = $cachedVars;
 
         $businessId = $this->getBusinessId();
         $pageInfoNode = QueryObject::pageInfo();
         $invoiceNode = QueryObject::invoice();
 
-        $this->cachedQuery = <<<GQL
-            query(\$customerId: ID!, \$page: Int, \$pageSize: Int, \$sort: [InvoiceSort!]!, \$modifiedAtAfter: DateTime, \$modifiedAtBefore: DateTime) {
-                business(id: "{$businessId}") {
-                    invoices(customerId: \$customerId, page: \$page, pageSize: \$pageSize, sort: \$sort, modifiedAtAfter: \$modifiedAtAfter, modifiedAtBefore: \$modifiedAtBefore) {
-                        pageInfo {
-                            $pageInfoNode
-                        }
-                        edges {
-                            node {
-                                $invoiceNode
+        if ($customerId !== null) {
+            $variables['customerId'] = $customerId;
+            $this->cachedQuery = <<<GQL
+                query(\$customerId: ID!, \$page: Int, \$pageSize: Int, \$sort: [InvoiceSort!]!, \$modifiedAtAfter: DateTime, \$modifiedAtBefore: DateTime) {
+                    business(id: "{$businessId}") {
+                        invoices(customerId: \$customerId, page: \$page, pageSize: \$pageSize, sort: \$sort, modifiedAtAfter: \$modifiedAtAfter, modifiedAtBefore: \$modifiedAtBefore) {
+                            pageInfo {
+                                $pageInfoNode
+                            }
+                            edges {
+                                node {
+                                    $invoiceNode
+                                }
                             }
                         }
                     }
                 }
-            }
-            GQL;
+                GQL;
+        } else {
+            $this->cachedQuery = <<<GQL
+                query(\$page: Int, \$pageSize: Int, \$sort: [InvoiceSort!]!, \$modifiedAtAfter: DateTime, \$modifiedAtBefore: DateTime) {
+                    business(id: "{$businessId}") {
+                        invoices(page: \$page, pageSize: \$pageSize, sort: \$sort, modifiedAtAfter: \$modifiedAtAfter,modifiedAtBefore: \$modifiedAtBefore) {
+                            pageInfo {
+                                $pageInfoNode
+                            }
+                            edges {
+                                node {
+                                    $invoiceNode
+                                }
+                            }
+                        }
+                    }
+                }
+                GQL;
+        }
+
         $this->cachedResponse = $this->query($variables);
 
         return $this->getNodes();
