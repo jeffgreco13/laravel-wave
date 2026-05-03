@@ -1,6 +1,6 @@
 # Laravel Wave
 
-A wrapper to use the [Wave][wave-app]'s graphql api in your laravel apps.
+A wrapper to use the [Wave][wave-app]'s graphql api in your laravel apps. This package was originally forked from [subbe/waveapp][subbe-waveapp] and adds some QOL improvements for Laravel devs.
 
 Wave API documentation can be located at:
 
@@ -35,113 +35,198 @@ If you do not know the ID for your business, you can use the following tinker co
 
 ```bash
 php artisan tinker
-> (new \Jeffgreco13\Wave\Wave())->businesses()
+> (new \Jeffgreco13\Wave\WaveService())->getBusinesses()
 ```
-
-### Queries
-
-- user
-- countries
-- country
-- businesses
-- business
-- currencies
-- currency
-- accountTypes
-- accountSubtypes
-- customerExists
-- customers
-- products
-- taxes
-
-### Mutations
-
-- customerCreate
-- customerPatch
-- customerDelete
-
-- accountCreate
-- accountPatch
-- accountArchive
-
-- productCreate
-- productPatch
-- productArchive
-
-- salesTaxCreate
-- salesTaxPatch
-- salesTaxArchive
-- salesTaxRateCreate
-
-- moneyTransactionCreate
-
-- invoiceCreate
-- invoiceClone
-- invoiceDelete
-- invoiceSend
-- invoiceApprove
-- invoiceMarkSent
 
 ## Usage
 
 ### Query
 
 ```php
-$Wave = new \Jeffgreco13\Wave\Wave();
-$countries = $Wave->countries();
+use Jeffgreco13\Wave\WaveService;
+
+$wave = new WaveService();
+
+$businesses = $wave->getBusinesses();
 ```
 
 or, with parameters...
 
 ```php
-$Wave = new \Jeffgreco13\Wave\Wave();
-$country = $Wave->country(['code' => 'US']);
+use Jeffgreco13\Wave\WaveService;
+
+$wave = new WaveService();
+
+$invoices = $wave->getInvoices([
+    "page" => 5,
+    "pageSize" => 20
+    "sort" => InvoiceSort::MODIFIED_AT_DESC,
+    "modifiedAtStart" => now()->copy()->subHours(24)->toIso8601String()
+]);
+```
+
+### Pagination
+
+Queries like `businesses` and `customers` may require pagination. Some shortcut methods exist:
+
+```php
+use Jeffgreco13\Wave\WaveService;
+
+$wave = new WaveService();
+
+$allInvoices = $wave->getAllInvoices([
+  "modifiedAtStart" => now()
+    ->subHours(5)
+    ->toISOString()
+]);
+```
+
+Or, you can create your own loop:
+
+```php
+use Jeffgreco13\Wave\WaveService;
+
+$wave = new WaveService();
+
+$allRecords = collect();
+$parameters = [
+    "page" => 1,
+    "pageSize" => 100
+];
+do {
+    $records = $wave->getInvoices($parameters);
+    $allRecords = $allRecords->merge($records);
+    $parameters["page"]++;
+} while ($wave->hasNextPage());
 ```
 
 ### Mutation
 
-```php
-$Wave = new \Jeffgreco13\Wave\Wave();
-$customer = [
-    "input" => [
-        "businessId" => "<REPLACE-THIS-WITH-THE-BUSINESS-ID>",
-        "name" => "Genevieve Heidenreich",
-        "firstName" => "Genevieve",
-        "lastName" => "Heidenreich",
-        "displayId" => "Genevieve",
-        "email" => "genevieve.heidenreich@example.com",
-        "mobile" => "011 8795",
-        "phone" => "330 8738",
-        "fax" => "566 5965",
-        "tollFree" => "266 5698",
-        "website" => "http://www.hermiston.com/architecto-commodi-possimus-esse-non-necessitatibus",
-        "internalNotes" => "",
-        "currency" => "USD",
-        "address" => [
-            "addressLine1" => "167 Iva Run",
-            "addressLine2" => "Parker Mews, Monahanstad, 40778-7100",
-            "city" => "West Tyrique",
-            "postalCode" => "82271",
-            "countryCode" => "EC",
-       ],
-       "shippingDetails" => [
-            "name" => "Genevieve",
-            "phone" => "011 8795",
-            "instructions" => [
-                "Delectus deleniti accusamus rerum voluptatem tempora.",
-            ],
-            "address" => [
-                "addressLine1" => "167 Iva Run",
-                "addressLine2" => "Parker Mews, Monahanstad, 40778-7100",
-                "city" => "West Tyrique",
-                "postalCode" => "82271",
-                "countryCode" => "EC",
-            ],
-        ],
-    ],
-];
+Refer to the Wave [API Reference](https://developer.waveapps.com/hc/en-us/articles/360019968212-API-Reference#invoicecreateinput) for input formats and required fields.
 
-$newCustomer = $Wave->customerCreate($customer, "CustomerCreateInput");
+```php
+use Jeffgreco13\Wave\WaveService;
+
+$wave = new WaveService();
+
+$invoice = $wave->createInvoice([
+    // 'businessId' => 'Qwxyz...'
+    "customerId" => "Qwxyz...",
+    "invoiceDate" => "yyyy-MM-dd",
+    "items" => [
+        [
+            "productId" => "Qwxyz...",
+            //
+            "quantity" => 2.5, // Supports decimal. Default: 1
+            "unitPrice" => 115.50, // Default: price set in Wave for this product.
+            "taxes" => ["QwSalesTaxId..."] // Default: tax(es) set in Wave for this product.
+        ],
+
+        // More line items can go here...
+
+    ]
+]);
+
+// Approve the invoice
+$wave->approveInvoice($invoice->id);
+
+// Send the invoice
+$wave->sendInvoice([
+    "invoiceId" => $invoice->id,
+    "to" => [
+        "customer@email.com"
+    ]
+])
+```
+
+### Raw Query
+
+You can perform any raw query or mutation like so:
+
+```php
+use Jeffgreco13\Wave\WaveService;
+
+$wave = new WaveService();
+
+$graphQl = <<<GQL
+    mutation CustomerCreateInput(\$input: CustomerCreateInput!) {
+        customerCreate(input: \$input) {
+            customer {
+                id
+                name
+            }
+            didSucceed
+            inputErrors {
+                path
+                message
+                code
+            }
+        }
+    }
+    GQL;
+$variables = [
+    "input" => [
+        "name" => "Business name"
+    ]
+];
+$response = $wave->rawQuery($graphQl,$variables);
+
+```
+
+### Available methods
+
+- rawQuery(string $query, ?array $variables)
+
+- getUser()
+- getAllCountries()
+- getAllCurrencies()
+
+- getAllBusinesses()
+- getBusiness(?string $id)
+
+- getAllProducts()
+
+- getAllTaxes()
+
+- getCustomers()
+- getAllCustomers()
+- createCustomer(array $input)
+- patchCustomer(array $input)
+
+- getInvoices()
+- getAllInvoices()
+- createInvoice(array $input)
+- approveInvoice(string $invoiceId)
+- sendInvoice(array $input)
+
+### Currency
+
+A simple way to download Wave's currencies and cache them for use in your app:
+
+First run the artisan command. This downloads the static currencies to a json file and saves them in your storage path:
+
+```
+php artisan wave:pull-currencies
+```
+You may now use the Currency class like so:
+
+```php
+use Jeffgreco13\Wave\WaveCurrency;
+
+$currencies = WaveCurrency::all(); // returns a Collection of Currency objects
+
+$currency = WaveCurrency::firstWhere("code","ARS"); // returns a single Currency object if found, or null
+echo $currency->name; // output: Argentinian peso
+
+// Currency array attributes
+array:5 [
+  "code" => "ARS"
+  "symbol" => "$"
+  "name" => "Argentinian peso"
+  "plural" => "Argentinian pesos"
+  "exponent" => 2
+]
+
 ```
 
 ## Contributing
@@ -161,3 +246,5 @@ Pull requests are welcome. For major changes, please open an issue first to disc
 [wave-create-an-app]: https://developer.waveapps.com/hc/en-us/articles/360019762711
 
 [socialite-wave]: https://github.com/SocialiteProviders/Providers/tree/master/src/Wave
+
+[subbe-waveapp]: https://github.com/subbe/waveapp

@@ -9,7 +9,7 @@
             "email": "jeff@jeffpgreco.com"
         }
     ],
-    "minimum-stability": "dev",
+    "minimum-stability": "stable",
     "autoload": {
         "psr-4": {
             "Jeffgreco13\\Wave\\": "src/"
@@ -31,7 +31,7 @@
                 "Jeffgreco13\\Wave\\WaveServiceProvider"
             ],
             "aliases": {
-                "Wave": "Jeffgreco13\\Wave\\Wave"
+                "WaveService": "Jeffgreco13\\Wave\\WaveService"
             }
         }
     },
