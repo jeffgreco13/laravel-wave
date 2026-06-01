@@ -14,7 +14,7 @@ return new class extends Migration
             $table->string('wave_business_id')->nullable()->index();
             $table->string('name');
             $table->text('description')->nullable();
-            $table->unsignedDecimal('unit_price', 10, 2)->nullable();
+            $table->decimal('unit_price', 10, 2)->nullable();
             $table->boolean('is_sold')->default(false);
             $table->boolean('is_bought')->default(false);
             $table->string('income_account_id')->nullable();

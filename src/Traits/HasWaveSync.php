@@ -15,19 +15,36 @@ trait HasWaveSync
     }
 
     /**
-     * Build a flat attribute array from a Wave API response using this model's waveAttributeMap.
+     * Resolve a flat attribute array from a Wave API response using this model's
+     * waveAttributeMap. Values missing from the payload resolve to null, except
+     * for attributes the model casts as boolean, which are coerced to false so
+     * they satisfy NOT NULL columns.
+     */
+    protected function mapWaveAttributes(array $data): array
+    {
+        $attributes = [];
+
+        foreach ($this->waveAttributeMap() as $column => $wavePath) {
+            $value = data_get($data, $wavePath);
+
+            if (is_null($value) && $this->hasCast($column, ['bool', 'boolean'])) {
+                $value = false;
+            }
+
+            $attributes[$column] = $value;
+        }
+
+        return $attributes;
+    }
+
+    /**
+     * Build an unsaved model instance from a Wave API response.
      */
     public static function fromWaveData(array $data): static
     {
         $instance = new static;
-        $map = $instance->waveAttributeMap();
 
-        $attributes = [];
-        foreach ($map as $column => $wavePath) {
-            $attributes[$column] = data_get($data, $wavePath);
-        }
-
-        return static::make($attributes);
+        return static::make($instance->mapWaveAttributes($data));
     }
 
     /**
@@ -41,14 +58,9 @@ trait HasWaveSync
         $waveIdPath = $map['wave_id'] ?? 'id';
         $waveId = data_get($data, $waveIdPath);
 
-        $attributes = [];
-        foreach ($map as $column => $wavePath) {
-            $attributes[$column] = data_get($data, $wavePath);
-        }
-
         return static::updateOrCreate(
             ['wave_id' => $waveId],
-            $attributes
+            $instance->mapWaveAttributes($data)
         );
     }
 }

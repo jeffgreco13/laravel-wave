@@ -47,8 +47,8 @@ return new class extends Migration
             $table->string('shipping_postal_code')->nullable();
 
             // Financial summary
-            $table->unsignedDecimal('outstanding_amount', 10, 2)->nullable();
-            $table->unsignedDecimal('overdue_amount', 10, 2)->nullable();
+            $table->decimal('outstanding_amount', 10, 2)->nullable();
+            $table->decimal('overdue_amount', 10, 2)->nullable();
 
             $table->boolean('is_archived')->default(false)->index();
             $table->timestamp('wave_created_at')->nullable();

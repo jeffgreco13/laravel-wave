@@ -24,11 +24,11 @@ return new class extends Migration
             $table->date('due_date')->nullable()->index();
             $table->char('currency_code', 3)->nullable();
             $table->decimal('exchange_rate', 20, 10)->nullable();
-            $table->unsignedDecimal('amount_due', 10, 2)->nullable();
+            $table->decimal('amount_due', 10, 2)->nullable();
             $table->char('amount_due_currency', 3)->nullable();
-            $table->unsignedDecimal('amount_paid', 10, 2)->nullable();
-            $table->unsignedDecimal('tax_total', 10, 2)->nullable();
-            $table->unsignedDecimal('total', 10, 2)->nullable();
+            $table->decimal('amount_paid', 10, 2)->nullable();
+            $table->decimal('tax_total', 10, 2)->nullable();
+            $table->decimal('total', 10, 2)->nullable();
             $table->char('total_currency', 3)->nullable();
             $table->string('pdf_url')->nullable();
             $table->string('view_url')->nullable();
