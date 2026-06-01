@@ -84,6 +84,30 @@ trait ManagesCustomers
         return new Node(data_get($this->cachedResponse, 'data.customerCreate.customer', []));
     }
 
+    public function deleteCustomer(string $customerId): bool
+    {
+        $this->cachedQuery = <<<'GQL'
+            mutation CustomerDeleteInput($input: CustomerDeleteInput!) {
+                customerDelete(input: $input) {
+                    didSucceed
+                    inputErrors {
+                        path
+                        message
+                        code
+                    }
+                }
+            }
+            GQL;
+        $this->cachedResponse = $this->query([
+            'input' => [
+                'businessId' => $this->getBusinessId(),
+                'customerId' => $customerId,
+            ],
+        ]);
+
+        return (bool) data_get($this->cachedResponse, 'data.customerDelete.didSucceed', false);
+    }
+
     public function patchCustomer(array $input): Node
     {
         $customer = QueryObject::customer();

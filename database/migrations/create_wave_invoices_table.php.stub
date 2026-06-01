@@ -1,0 +1,50 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create('wave_invoices', function (Blueprint $table) {
+            $table->id();
+            $table->string('wave_id')->unique();
+            $table->string('wave_business_id')->nullable()->index();
+            $table->string('wave_customer_id')->nullable()->index();
+            $table->string('invoice_number')->nullable()->index();
+            $table->string('status')->nullable()->index();
+            $table->string('title')->nullable();
+            $table->string('subhead')->nullable();
+            $table->string('po_number')->nullable();
+            $table->text('memo')->nullable();
+            $table->text('footer')->nullable();
+            $table->date('invoice_date')->nullable();
+            $table->date('due_date')->nullable()->index();
+            $table->char('currency_code', 3)->nullable();
+            $table->decimal('exchange_rate', 20, 10)->nullable();
+            $table->unsignedDecimal('amount_due', 10, 2)->nullable();
+            $table->char('amount_due_currency', 3)->nullable();
+            $table->unsignedDecimal('amount_paid', 10, 2)->nullable();
+            $table->unsignedDecimal('tax_total', 10, 2)->nullable();
+            $table->unsignedDecimal('total', 10, 2)->nullable();
+            $table->char('total_currency', 3)->nullable();
+            $table->string('pdf_url')->nullable();
+            $table->string('view_url')->nullable();
+            $table->json('items')->nullable();
+            $table->string('last_sent_via')->nullable();
+            $table->timestamp('last_sent_at')->nullable();
+            $table->timestamp('last_viewed_at')->nullable();
+            $table->boolean('is_archived')->default(false)->index();
+            $table->timestamp('wave_created_at')->nullable();
+            $table->timestamp('wave_modified_at')->nullable()->index();
+            $table->timestamps();
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('wave_invoices');
+    }
+};

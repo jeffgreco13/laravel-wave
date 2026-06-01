@@ -4,23 +4,27 @@ namespace Jeffgreco13\Wave;
 
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Http;
+use Jeffgreco13\Wave\Traits\ManagesAccounts;
 use Jeffgreco13\Wave\Traits\ManagesBusinesses;
 use Jeffgreco13\Wave\Traits\ManagesCurrencies;
 use Jeffgreco13\Wave\Traits\ManagesCustomers;
 use Jeffgreco13\Wave\Traits\ManagesInvoices;
 use Jeffgreco13\Wave\Traits\ManagesProducts;
 use Jeffgreco13\Wave\Traits\ManagesTaxes;
+use Jeffgreco13\Wave\Traits\ManagesVendors;
 use RecursiveArrayIterator;
 use RecursiveIteratorIterator;
 
 class WaveService
 {
+    use ManagesAccounts;
     use ManagesBusinesses;
     use ManagesCurrencies;
     use ManagesCustomers;
     use ManagesInvoices;
     use ManagesProducts;
     use ManagesTaxes;
+    use ManagesVendors;
 
     protected $client = null;
 
@@ -42,17 +46,17 @@ class WaveService
 
     public function __construct()
     {
-        $this->token = config('laravel-wave.access_token');
+        $this->token = config('wave.access_token');
         if (is_null($this->token)) {
             throw new Exceptions\AuthenticationException;
         }
 
-        $this->url = config('laravel-wave.graphql_uri');
+        $this->url = config('wave.graphql_uri');
         if (is_null($this->url)) {
             throw new Exceptions\InvalidDataException('Wave GraphQL URI is required.');
         }
 
-        $this->businessId = config('laravel-wave.business_id');
+        $this->businessId = config('wave.business_id');
 
         $this->client = Http::withToken($this->token)->asJson();
 

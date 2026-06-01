@@ -1,250 +1,354 @@
-# Laravel Wave
+# laravel-wave
 
-A wrapper to use the [Wave][wave-app]'s graphql api in your laravel apps. This package was originally forked from [subbe/waveapp][subbe-waveapp] and adds some QOL improvements for Laravel devs.
+A Laravel package for the [Wave Accounting](https://www.waveapps.com) GraphQL API. Query your Wave data, sync it to local Eloquent models, and manage customers, invoices, products, and more — all via queued jobs and Artisan commands.
 
-Wave API documentation can be located at:
+---
 
-- [Wave - Developer Portal][wave-documentation-url]
-- [API Reference][wave-api-reference]
+## Requirements
 
-## Application Setup
+- PHP 8.2+
+- Laravel 11, 12, or 13
+- A [Wave developer account](https://developer.waveapps.com) with an OAuth2 access token
 
-To use Laravel Wave, you will need to [create an app][wave-create-an-app] on the developer portal.
-
-After you have created a new app, click in to edit its settings. Create a new Full Access token and copy this to a save place. You will need this in your .env
-
-OAuth flow is not supported by this package. Consider using the [Socialite Wave Provider][socialite-wave] then pass the Access Token to the Wave class at runtime.
+---
 
 ## Installation
-
-Require the package using composer:
 
 ```bash
 composer require jeffgreco13/laravel-wave
 ```
 
-Update your .env file to include:
-
-```
-WAVE_ACCESS_TOKEN= *your full access token*
-WAVE_BUSINESS_ID= *ID for the business you wish to interact with*
-WAVE_GRAPHQL_URI= *defaults to https://gql.waveapps.com/graphql/public*
-```
-
-If you do not know the ID for your business, you can use the following tinker command:
+Publish the config file:
 
 ```bash
-php artisan tinker
-> (new \Jeffgreco13\Wave\WaveService())->getBusinesses()
+php artisan vendor:publish --tag=wave-config
 ```
 
-## Usage
+Publish the migrations (optional — only needed if you want local sync):
 
-### Query
+```bash
+php artisan vendor:publish --tag=wave-migrations
+php artisan migrate
+```
+
+---
+
+## Configuration
+
+Add to your `.env`:
+
+```env
+WAVE_ACCESS_TOKEN=your_oauth_token_here
+WAVE_BUSINESS_ID=your_wave_business_uuid_here
+```
+
+Full `config/wave.php` reference:
+
+```php
+return [
+    'access_token' => env('WAVE_ACCESS_TOKEN'),
+    'graphql_uri'  => env('WAVE_GRAPHQL_URI', 'https://gql.waveapps.com/graphql/public'),
+    'business_id'  => env('WAVE_BUSINESS_ID'),
+
+    // Override with your own Eloquent models (see "Custom Models" below)
+    'models' => [
+        'customer'  => \Jeffgreco13\Wave\Models\WaveCustomer::class,
+        'invoice'   => \Jeffgreco13\Wave\Models\WaveInvoice::class,
+        'product'   => \Jeffgreco13\Wave\Models\WaveProduct::class,
+        'sales_tax' => \Jeffgreco13\Wave\Models\WaveSalesTax::class,
+        'vendor'    => \Jeffgreco13\Wave\Models\WaveVendor::class,
+        'business'  => \Jeffgreco13\Wave\Models\WaveBusiness::class,
+        'account'   => \Jeffgreco13\Wave\Models\WaveAccount::class,
+    ],
+
+    'sync' => [
+        'chunk_size' => 150, // records per page during sync
+    ],
+];
+```
+
+---
+
+## Basic Usage
+
+Inject `WaveService` or resolve it from the container:
 
 ```php
 use Jeffgreco13\Wave\WaveService;
 
-$wave = new WaveService();
+class InvoiceController extends Controller
+{
+    public function __construct(protected WaveService $wave) {}
 
-$businesses = $wave->getBusinesses();
+    public function index()
+    {
+        // Returns a Collection of Node objects
+        return $this->wave->getCustomers(['page' => 1, 'pageSize' => 20]);
+    }
+}
 ```
 
-or, with parameters...
+Nodes support both array and property access:
 
 ```php
-use Jeffgreco13\Wave\WaveService;
-
-$wave = new WaveService();
-
-$invoices = $wave->getInvoices([
-    "page" => 5,
-    "pageSize" => 20
-    "sort" => InvoiceSort::MODIFIED_AT_DESC,
-    "modifiedAtStart" => now()->copy()->subHours(24)->toIso8601String()
-]);
+foreach ($this->wave->getAllCustomers() as $customer) {
+    echo $customer['name'];   // array access
+    echo $customer->email;    // property access
+}
 ```
+
+### Available API Methods
+
+| Method | Description |
+|---|---|
+| `getCustomers($vars)` | Paginated customer list |
+| `getAllCustomers($vars)` | All customers (handles pagination) |
+| `createCustomer($input)` | Create a new customer |
+| `patchCustomer($input)` | Update a customer (requires `id`) |
+| `deleteCustomer($customerId)` | Delete a customer |
+| `getInvoices($vars)` | Paginated invoice list |
+| `getAllInvoices($vars)` | All invoices |
+| `createInvoice($input)` | Create an invoice |
+| `approveInvoice($invoiceId)` | Approve a draft invoice |
+| `sendInvoice($input)` | Send an invoice by email |
+| `getAllProducts()` | All products |
+| `getAllTaxes()` | All sales taxes |
+| `getVendors($vars)` | Paginated vendor list |
+| `getAllVendors()` | All vendors |
+| `getAccounts($vars)` | Paginated chart-of-accounts |
+| `getAllAccounts()` | All chart-of-accounts entries |
+| `getAccount($accountId)` | Single account |
+| `getAllBusinesses()` | All businesses on the account |
+| `getBusiness($id)` | Single business |
+| `getUser()` | Authenticated user |
+| `rawQuery($query, $variables)` | Execute a custom GraphQL query |
 
 ### Pagination
 
-Queries like `businesses` and `customers` may require pagination. Some shortcut methods exist:
+```php
+$wave->getCustomers(['page' => 1, 'pageSize' => 20]);
+
+while ($wave->hasNextPage()) {
+    $wave->nextPage();
+    $wave->getCustomers();
+}
+```
+
+---
+
+## Data Sync
+
+Sync jobs persist Wave data to your local database. All jobs implement `ShouldQueue`.
+
+### Full Sync
+
+Fetches all records from Wave and upserts them locally. After all pages are processed, any local record whose `wave_id` was **not** seen in Wave is deleted (orphan cleanup).
 
 ```php
-use Jeffgreco13\Wave\WaveService;
+use Jeffgreco13\Wave\Jobs\SyncCustomersFromWave;
 
-$wave = new WaveService();
+// Queue
+SyncCustomersFromWave::dispatch();
 
-$allInvoices = $wave->getAllInvoices([
-  "modifiedAtStart" => now()
-    ->subHours(5)
-    ->toISOString()
+// Or via Artisan
+php artisan wave:sync-customers
+```
+
+### Incremental Sync
+
+Only fetches records modified after a given date. **Never deletes** local records — a missing record just means it was not recently modified, not that it was deleted.
+
+```php
+// Sync records modified in the last 24 hours
+SyncCustomersFromWave::dispatch(since: now()->subDay());
+```
+
+```bash
+# Specific date
+php artisan wave:sync-customers --since="2024-06-01"
+
+# Automatically use the most recently synced local record's wave_modified_at
+php artisan wave:sync-customers --since=last
+```
+
+### Sync All Entities
+
+```bash
+# Queue all sync jobs
+php artisan wave:sync-all
+
+# Run synchronously
+php artisan wave:sync-all --sync
+
+# With business override
+php artisan wave:sync-all --business-id=QnVzaW5lc3M6...
+```
+
+### Querying Local Wave Models
+
+```php
+use Jeffgreco13\Wave\Models\WaveCustomer;
+use Jeffgreco13\Wave\Models\WaveInvoice;
+
+// Active customers
+WaveCustomer::active()->get();
+
+// Find by Wave ID
+WaveCustomer::where('wave_id', $id)->first();
+
+// Unpaid invoices for a customer
+WaveInvoice::active()->forCustomer($waveCustomerId)->status('UNPAID')->get();
+```
+
+---
+
+## Customer CRUD via Jobs
+
+```php
+use Jeffgreco13\Wave\Jobs\CreateWaveCustomer;
+use Jeffgreco13\Wave\Jobs\UpdateWaveCustomer;
+use Jeffgreco13\Wave\Jobs\DeleteWaveCustomer;
+
+// Create in Wave and upsert locally
+CreateWaveCustomer::dispatch([
+    'name'  => 'Acme Corp',
+    'email' => 'billing@acme.com',
 ]);
-```
 
-Or, you can create your own loop:
-
-```php
-use Jeffgreco13\Wave\WaveService;
-
-$wave = new WaveService();
-
-$allRecords = collect();
-$parameters = [
-    "page" => 1,
-    "pageSize" => 100
-];
-do {
-    $records = $wave->getInvoices($parameters);
-    $allRecords = $allRecords->merge($records);
-    $parameters["page"]++;
-} while ($wave->hasNextPage());
-```
-
-### Mutation
-
-Refer to the Wave [API Reference](https://developer.waveapps.com/hc/en-us/articles/360019968212-API-Reference#invoicecreateinput) for input formats and required fields.
-
-```php
-use Jeffgreco13\Wave\WaveService;
-
-$wave = new WaveService();
-
-$invoice = $wave->createInvoice([
-    // 'businessId' => 'Qwxyz...'
-    "customerId" => "Qwxyz...",
-    "invoiceDate" => "yyyy-MM-dd",
-    "items" => [
-        [
-            "productId" => "Qwxyz...",
-            //
-            "quantity" => 2.5, // Supports decimal. Default: 1
-            "unitPrice" => 115.50, // Default: price set in Wave for this product.
-            "taxes" => ["QwSalesTaxId..."] // Default: tax(es) set in Wave for this product.
-        ],
-
-        // More line items can go here...
-
-    ]
+// Update (must include 'id' — Wave's customer UUID)
+UpdateWaveCustomer::dispatch([
+    'id'    => 'QnVzdG9tZXI6...',
+    'email' => 'new@acme.com',
 ]);
 
-// Approve the invoice
-$wave->approveInvoice($invoice->id);
-
-// Send the invoice
-$wave->sendInvoice([
-    "invoiceId" => $invoice->id,
-    "to" => [
-        "customer@email.com"
-    ]
-])
+// Delete from Wave and remove the local record
+DeleteWaveCustomer::dispatch('QnVzdG9tZXI6...');
 ```
 
-### Raw Query
+---
 
-You can perform any raw query or mutation like so:
+## Custom Models
+
+To use your own Eloquent model, implement the `HasWaveSync` trait and register it in `config/wave.php`.
 
 ```php
-use Jeffgreco13\Wave\WaveService;
+// app/Models/Customer.php
+use Jeffgreco13\Wave\Traits\HasWaveSync;
 
-$wave = new WaveService();
+class Customer extends Model
+{
+    use HasWaveSync;
 
-$graphQl = <<<GQL
-    mutation CustomerCreateInput(\$input: CustomerCreateInput!) {
-        customerCreate(input: \$input) {
-            customer {
-                id
-                name
-            }
-            didSucceed
-            inputErrors {
-                path
-                message
-                code
-            }
-        }
+    protected $fillable = ['wave_id', 'company_name', 'email', 'currency_code'];
+
+    /**
+     * Map local column names to Wave API field paths.
+     * Use dot-notation for nested Wave objects.
+     */
+    public function waveAttributeMap(): array
+    {
+        return [
+            'wave_id'       => 'id',
+            'company_name'  => 'name',
+            'email'         => 'email',
+            'currency_code' => 'currency.code',
+        ];
     }
-    GQL;
-$variables = [
-    "input" => [
-        "name" => "Business name"
-    ]
-];
-$response = $wave->rawQuery($graphQl,$variables);
-
+}
 ```
 
-### Available methods
-
-- rawQuery(string $query, ?array $variables)
-
-- getUser()
-- getAllCountries()
-- getAllCurrencies()
-
-- getAllBusinesses()
-- getBusiness(?string $id)
-
-- getAllProducts()
-
-- getAllTaxes()
-
-- getCustomers()
-- getAllCustomers()
-- createCustomer(array $input)
-- patchCustomer(array $input)
-
-- getInvoices()
-- getAllInvoices()
-- createInvoice(array $input)
-- approveInvoice(string $invoiceId)
-- sendInvoice(array $input)
-
-### Currency
-
-A simple way to download Wave's currencies and cache them for use in your app:
-
-First run the artisan command. This downloads the static currencies to a json file and saves them in your storage path:
-
-```
-php artisan wave:pull-currencies
-```
-You may now use the Currency class like so:
+Register in `config/wave.php`:
 
 ```php
-use Jeffgreco13\Wave\WaveCurrency;
-
-$currencies = WaveCurrency::all(); // returns a Collection of Currency objects
-
-$currency = WaveCurrency::firstWhere("code","ARS"); // returns a single Currency object if found, or null
-echo $currency->name; // output: Argentinian peso
-
-// Currency array attributes
-array:5 [
-  "code" => "ARS"
-  "symbol" => "$"
-  "name" => "Argentinian peso"
-  "plural" => "Argentinian pesos"
-  "exponent" => 2
-]
-
+'models' => [
+    'customer' => \App\Models\Customer::class,
+],
 ```
 
-## Contributing
+All sync jobs (`SyncCustomersFromWave`, `CreateWaveCustomer`, etc.) will use your model automatically.
 
-Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
+---
+
+## Available Artisan Commands
+
+| Command | Description |
+|---|---|
+| `wave:sync-customers` | Sync customers from Wave |
+| `wave:sync-all` | Sync all entities |
+| `wave:pull-currencies` | Cache Wave currency list locally |
+
+**Options for `wave:sync-customers` and `wave:sync-all`:**
+
+| Option | Description |
+|---|---|
+| `--since="YYYY-MM-DD"` | Incremental sync from a date |
+| `--since=last` | Incremental from most recent local record |
+| `--business-id=` | Override the configured business ID |
+| `--sync` | Run synchronously (skip queue) |
+| `--fresh` | Truncate the local table first (full sync only) |
+
+---
+
+## Available Sync Jobs
+
+| Job | Supports `$since`? | Deletes orphans? |
+|---|---|---|
+| `SyncCustomersFromWave` | Yes | Full sync only |
+| `SyncInvoicesFromWave` | Yes | Full sync only |
+| `SyncProductsFromWave` | No | Always (full sync) |
+| `SyncSalesTaxesFromWave` | No | Always |
+| `SyncVendorsFromWave` | No | Always |
+| `SyncBusinessesFromWave` | No | Always |
+| `SyncAccountsFromWave` | No | Always |
+
+---
+
+## Data Enums
+
+Use built-in enums for sort/filter values:
+
+```php
+use Jeffgreco13\Wave\Data\CustomerSort;
+use Jeffgreco13\Wave\Data\InvoiceSort;
+use Jeffgreco13\Wave\Data\InvoiceStatus;
+use Jeffgreco13\Wave\Data\InvoiceCreateStatus;
+use Jeffgreco13\Wave\Data\ProductSort;
+
+$wave->getCustomers(['sort' => CustomerSort::NAME_ASC]);
+$wave->getInvoices(['status' => InvoiceStatus::UNPAID]);
+```
+
+---
+
+## Laravel Boost
+
+This package includes AI guidelines and a developer skill for [Laravel Boost](https://laravel.com/docs/13.x/boost). After installing Boost in your app, run:
+
+```bash
+php artisan boost:install
+# or
+php artisan boost:update --discover
+```
+
+Boost will automatically load the `wave-development` guidelines and skill to help AI agents write correct Wave integration code.
+
+---
+
+## Changelog / Upgrade Guide
+
+### v2.0
+
+- **Breaking:** Config key changed from `laravel-wave` to `wave`. Update any manual `config('laravel-wave.*')` calls to `config('wave.*')`.
+- Added local Eloquent model sync (`wave_customers`, `wave_invoices`, `wave_products`, `wave_sales_taxes`, `wave_vendors`, `wave_businesses`, `wave_accounts`)
+- Added `HasWaveSync` trait for custom model mapping
+- Added sync jobs for all entities with full/incremental modes and orphan deletion
+- Added `wave:sync-customers`, `wave:sync-all` Artisan commands
+- Added `ManagesVendors` and `ManagesAccounts` traits to `WaveService`
+- Added `deleteCustomer()` to `ManagesCustomers`
+- Laravel Boost integration (`resources/boost/guidelines/` and `resources/boost/skills/`)
+
+---
 
 ## License
 
-[MIT](./LICENSE.md)
-
-[wave-app]: https://www.waveapps.com/
-
-[wave-documentation-url]: https://developer.waveapps.com/hc/en-us/categories/360001114072
-
-[wave-api-reference]: https://developer.waveapps.com/hc/en-us/articles/360019968212-API-Reference
-
-[wave-create-an-app]: https://developer.waveapps.com/hc/en-us/articles/360019762711
-
-[socialite-wave]: https://github.com/SocialiteProviders/Providers/tree/master/src/Wave
-
-[subbe-waveapp]: https://github.com/subbe/waveapp
+MIT

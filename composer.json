@@ -1,7 +1,8 @@
 {
     "name": "jeffgreco13/laravel-wave",
-    "description": "A wrapper to use the Wave GraphQL API in your Laravel apps.",
-    "type": "project",
+    "description": "A Laravel wrapper for the Wave Accounting GraphQL API with local data sync.",
+    "version": "2.0.0",
+    "type": "library",
     "license": "MIT",
     "authors": [
         {
