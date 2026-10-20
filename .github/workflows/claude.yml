@@ -1,0 +1,50 @@
+# Picks up a remediation issue (opened by the Estate at app.jeffpgreco.com
+# with the `remediation` label and an @claude mention) or an @claude comment,
+# and opens a DRAFT pull request. It never merges; `ci` and branch protection
+# gate that. Copy to .github/workflows/claude.yml, install the Claude GitHub
+# App on the repository, and add the secret CLAUDE_CODE_OAUTH_TOKEN (from
+# `claude setup-token`) or ANTHROPIC_API_KEY.
+name: claude
+
+on:
+  issues:
+    types: [opened, labeled]
+  issue_comment:
+    types: [created]
+  pull_request_review_comment:
+    types: [created]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  id-token: write
+  actions: read
+
+jobs:
+  claude:
+    if: >
+      (github.event_name == 'issues' && (contains(github.event.issue.labels.*.name, 'remediation') || contains(github.event.issue.body, '@claude'))) ||
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
+      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
+      github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: anthropics/claude-code-action@v1
+        with:
+          # Set ONE of these secrets; the other stays empty.
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_args: "--max-turns 30"
+          prompt: |
+            This issue hands you one security advisory. Bump exactly the package(s) it names
+            — the declared dependency, never a transitive one required directly — to a version
+            that clears the advisory. Change nothing unrelated. Run the same checks the `ci`
+            workflow runs (tests and the build) and say in the PR body what you ran and what it
+            reported. Work on a branch named security/<package> from main and open a DRAFT pull request into main
+            referencing this issue. Do not merge.

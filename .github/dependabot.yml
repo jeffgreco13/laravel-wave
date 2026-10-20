@@ -1,0 +1,56 @@
+# Dependabot configuration — the standard for every repository watched by the Estate at
+# app.jeffpgreco.com.
+#
+# The point of the grouping below is that the unit of work is a DEPENDENCY,
+# not an advisory. Sixteen npm packages produce ninety-five alerts across this
+# estate; ungrouped, that is ninety-five pull requests for sixteen upgrades.
+#
+# Alerts themselves are not grouped by GitHub — grouping applies to the pull
+# requests Dependabot opens. The Estate groups the alerts by package on its
+# own side, so the two views agree.
+#
+# The SECURITY groups only work with "Dependabot security updates" switched on
+# (Settings > Code security; free, off by default). Without it this file opens
+# no pull request for an advisory, only the scheduled version updates. And
+# security PRs are not on the schedule below: Dependabot opens them as soon as
+# an advisory lands.
+version: 2
+
+updates:
+  - package-ecosystem: composer
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: America/Toronto
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+    groups:
+      # Everything security-related in one PR rather than a queue of them.
+      composer-security:
+        applies-to: security-updates
+        patterns:
+          - "*"
+      # Routine upgrades split by risk: patch and minor together are usually
+      # safe to take as a batch, majors are read one at a time.
+      composer-routine:
+        applies-to: version-updates
+        update-types:
+          - patch
+          - minor
+        patterns:
+          - "*"
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 2
+    labels:
+      - dependencies
+    groups:
+      actions:
+        patterns:
+          - "*"
